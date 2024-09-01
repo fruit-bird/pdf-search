@@ -1,0 +1,58 @@
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain import hub
+from langchain_core.documents import Document
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain_community.llms.ollama import Ollama
+
+from pdf_search.config import config
+from pdf_search.schemas import AskQuestionResponse
+
+
+def format_docs(docs: list[Document]) -> str:
+    return "\n\n".join(doc.page_content for doc in docs)
+
+
+class QAService:
+    @staticmethod
+    async def ask_question(
+        question: str,
+        collection_name: str = "pdf_embeddings",
+    ) -> AskQuestionResponse:
+        """
+        Ask a question and return the answer with the relevant sources.
+
+        This queries all the documents in the collection
+        """
+        embedding = OllamaEmbeddings(model=config.ai.model_name)
+        vectordb = Chroma(
+            persist_directory=config.ai.embeddings_persist_path,
+            embedding_function=embedding,
+            collection_name=collection_name,
+        )
+
+        retriever = vectordb.as_retriever()
+
+        prompt = hub.pull("rlm/rag-prompt")
+        llm = Ollama(model=config.ai.model_name)
+
+        qa_chain = (
+            {
+                "context": retriever | format_docs,
+                "question": RunnablePassthrough(),
+            }
+            | prompt
+            | llm
+            | StrOutputParser()
+        )
+
+        answer = qa_chain.invoke(question)
+        docs = retriever.invoke(question)
+        sources = [doc.metadata.get("source", "Unknown") for doc in docs]
+
+        return {
+            "question": question,
+            "answer": answer,
+            "sources": sources,
+        }
