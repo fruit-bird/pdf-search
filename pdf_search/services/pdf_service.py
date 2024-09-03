@@ -1,12 +1,11 @@
 import os
 import uuid
 import aiofiles
-from pathlib import Path
+from pathlib import Path as PathlibPath
 from fastapi import UploadFile, HTTPException, File
 from pydantic.types import Path
 
 from pdf_search.config import config
-# from pdf_search.schemas import UploadPDFResponse
 
 
 class PDFService:
@@ -61,7 +60,7 @@ class PDFService:
         pdf_path = [
             f
             for f in os.listdir(config.api.pdf_storage_path)
-            if Path(f).stem == str(file_uuid)
+            if PathlibPath(f).stem == str(file_uuid)
         ]
 
         print(pdf_path)
