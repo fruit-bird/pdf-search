@@ -1,4 +1,4 @@
-from langchain_community.vectorstores import Chroma
+from langchain_chroma.vectorstores import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain import hub
 from langchain_core.documents import Document
@@ -19,6 +19,7 @@ class QAService:
     async def ask_question(
         question: str,
         collection_name: str = "pdf_embeddings",
+        metadata_filter: dict = None,
     ) -> AskQuestionResponse:
         """
         Ask a question and return the answer with the relevant sources.
@@ -32,7 +33,7 @@ class QAService:
             collection_name=collection_name,
         )
 
-        retriever = vectordb.as_retriever()
+        retriever = vectordb.as_retriever(search_kwargs={"filter": metadata_filter})
 
         prompt = hub.pull("rlm/rag-prompt")
         llm = Ollama(model=config.ai.model_name)
@@ -47,12 +48,14 @@ class QAService:
             | StrOutputParser()
         )
 
-        answer = qa_chain.invoke(question)
-        docs = retriever.invoke(question)
+        answer = await qa_chain.ainvoke(question)
+        docs = await retriever.ainvoke(question)
         sources = [doc.metadata.get("source", "Unknown") for doc in docs]
-
+        names = [doc.metadata.get("name", "Unknown") for doc in docs]
+        
         return {
             "question": question,
             "answer": answer,
             "sources": sources,
+            "names": names,
         }
