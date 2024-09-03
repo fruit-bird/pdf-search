@@ -1,19 +1,10 @@
 from pydantic import BaseModel
-from pydantic.types import UUID4, Path
+from pydantic.types import Path, List
 
 
 class UploadPDFResponse(BaseModel):
-    class UploadPDFResponseFile(BaseModel):
-        uuid: UUID4
-        location: Path
-        size_bytes: int
-
-    class UploadPDFResponseEmbeddings(BaseModel):
-        num_documents: int
-
-    file: UploadPDFResponseFile
-    embeddings: UploadPDFResponseEmbeddings
-    message: str
+    name: Path  # upload name (original_name.pdf)
+    source: Path  # storage pdf name without ext (uuid~~.pdf~~)
 
 
 class AskQuestionRequest(BaseModel):
@@ -23,4 +14,9 @@ class AskQuestionRequest(BaseModel):
 class AskQuestionResponse(BaseModel):
     question: str
     answer: str
-    sources: list[Path]
+    sources: List[Path]
+    names: List[str]
+
+
+class DeletePDFResponse(BaseModel):
+    message: str = "PDF deleted successfully"

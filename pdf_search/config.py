@@ -14,8 +14,17 @@ class DatabaseConfig:
 
 
 class AIConfig:
-    def __init__(self, model_name, num_tokens, openai_api_key):
+    def __init__(
+        self,
+        model_name,
+        embedding_model_name,
+        embeddings_persist_path,
+        num_tokens,
+        openai_api_key,
+    ):
         self.model_name: str = model_name
+        self.embedding_model_name: str = embedding_model_name
+        self.embeddings_persist_path: str = embeddings_persist_path
         self.num_tokens: int = num_tokens
         self.openai_api_key: str = openai_api_key
 
