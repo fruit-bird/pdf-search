@@ -2,10 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from pdf_search.config import config
-from pdf_search.routes import pdf_router
+from pdf_search.routes import pdf_router, ask_router, metadata_router
 
 app = FastAPI()
 app.include_router(pdf_router)
+app.include_router(ask_router)
+app.include_router(metadata_router)
+
 
 app.add_middleware(
     CORSMiddleware,

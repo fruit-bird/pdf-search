@@ -3,11 +3,9 @@ from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
 # from fastapi.responses import FileResponse
 from pydantic.types import UUID4
 
-from pdf_search.services import PDFService, EmbeddingService, QAService
+from pdf_search.services import PDFService, EmbeddingService
 from pdf_search.schemas import (
     UploadPDFResponse,
-    AskQuestionRequest,
-    AskQuestionResponse,
     DeletePDFResponse,
 )
 
@@ -51,24 +49,3 @@ async def delete_pdf(uuid: UUID4) -> None:
 
     await PDFService.delete_pdf(uuid)
     return DeletePDFResponse()
-
-
-@router.post("/ask")
-async def ask_question(req: AskQuestionRequest) -> AskQuestionResponse:
-    return await QAService.ask_question(question=req.question)
-
-
-@router.post("/ask/{pdf_source_uuid}")
-async def ask_question_about_pdf(
-    req: AskQuestionRequest,
-    pdf_source_uuid: UUID4,
-) -> AskQuestionResponse:
-    return await QAService.ask_question(
-        question=req.question,
-        metadata_filter={"source": str(pdf_source_uuid)},
-    )
-
-
-@router.get("/metadata")
-async def get_metadata() -> list[dict]:
-    return await EmbeddingService.get_all_metadata()
