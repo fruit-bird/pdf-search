@@ -13,7 +13,7 @@ router = APIRouter(prefix="/pdf", tags=["pdf"])
 
 
 # https://restfulapi.net/rest-api-design-for-long-running-tasks/
-@router.post("/", status_code=202)
+@router.post("/")
 async def upload_pdf(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -28,8 +28,12 @@ async def upload_pdf(
     # background tasks cannot be checked for completion,
     # and answers online suggest using a lib called Celery, which seems overkill,
     # although checking for completion in a real environment is neccessary
-    background_tasks.add_task(
-        EmbeddingService.generate_embeddings_from_pdf,
+    # background_tasks.add_task(
+    #     EmbeddingService.generate_embeddings_from_pdf,
+    #     pdf_source_path=source,
+    #     pdf_name=upload_name,
+    # )
+    await EmbeddingService.generate_embeddings_from_pdf(
         pdf_source_path=source,
         pdf_name=upload_name,
     )
@@ -41,7 +45,7 @@ async def upload_pdf(
 
 
 @router.delete("/{uuid}")
-async def delete_pdf(uuid: UUID4) -> None:
+async def delete_pdf(uuid: UUID4) -> DeletePDFResponse:
     is_deleted = await EmbeddingService.delete_embeddings_of_pdf(uuid)
     if not is_deleted:
         raise HTTPException(status_code=500, detail="Failed to delete embeddings")
@@ -73,8 +77,7 @@ async def update_pdf(
     # background tasks cannot be checked for completion,
     # and answers online suggest using a lib called Celery, which seems overkill,
     # although checking for completion in a real environment is neccessary
-    background_tasks.add_task(
-        EmbeddingService.generate_embeddings_from_pdf,
+    await EmbeddingService.generate_embeddings_from_pdf(
         pdf_source_path=source,
         pdf_name=upload_name,
     )
