@@ -1,8 +1,11 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from pdf_search.config import config
 from pdf_search.routes import pdf_router, ask_router, metadata_router
+
+os.environ["GOOGLE_API_KEY"] = config.ai.google_api_key
 
 app = FastAPI()
 app.include_router(pdf_router)
