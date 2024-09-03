@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
-
-# from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse
 from pydantic.types import UUID4
 
 from pdf_search.services import PDFService, EmbeddingService
@@ -49,3 +48,9 @@ async def delete_pdf(uuid: UUID4) -> None:
 
     await PDFService.delete_pdf(uuid)
     return DeletePDFResponse()
+
+
+@router.get("/{uuid}")
+async def download_pdf(uuid: UUID4) -> FileResponse:
+    pdf_path = await PDFService.download_pdf(uuid)
+    return FileResponse(pdf_path)

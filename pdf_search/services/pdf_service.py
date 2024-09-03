@@ -1,6 +1,7 @@
 import os
 import uuid
 import aiofiles
+from pathlib import Path
 from fastapi import UploadFile, HTTPException, File
 from pydantic.types import Path
 
@@ -54,3 +55,18 @@ class PDFService:
             raise HTTPException(status_code=404, detail="File not found")
         except Exception as _:
             raise HTTPException(status_code=500, detail="File could not be deleted")
+
+    @staticmethod
+    async def download_pdf(file_uuid: uuid.UUID) -> str:
+        pdf_path = [
+            f
+            for f in os.listdir(config.api.pdf_storage_path)
+            if Path(f).stem == str(file_uuid)
+        ]
+
+        print(pdf_path)
+        if len(pdf_path) != 1:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        pdf_path = os.path.join(config.api.pdf_storage_path, pdf_path[0])
+        return pdf_path
