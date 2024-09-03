@@ -54,3 +54,32 @@ async def delete_pdf(uuid: UUID4) -> None:
 async def download_pdf(uuid: UUID4) -> FileResponse:
     pdf_path = await PDFService.download_pdf(uuid)
     return FileResponse(pdf_path)
+
+
+@router.put("/{uuid}", status_code=202)
+async def update_pdf(
+    uuid: UUID4,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+) -> UploadPDFResponse:
+    # FIRST DELETE OLD EMBEDDINGS AND PDF
+    is_deleted = await EmbeddingService.delete_embeddings_of_pdf(uuid)
+    if not is_deleted:
+        raise HTTPException(status_code=500, detail="Failed to delete old embeddings")
+
+    await PDFService.delete_pdf(uuid)
+
+    upload_name, source = await PDFService.upload_pdf(file, file_uuid=uuid)
+    # background tasks cannot be checked for completion,
+    # and answers online suggest using a lib called Celery, which seems overkill,
+    # although checking for completion in a real environment is neccessary
+    background_tasks.add_task(
+        EmbeddingService.generate_embeddings_from_pdf,
+        pdf_source_path=source,
+        pdf_name=upload_name,
+    )
+
+    return UploadPDFResponse(
+        name=upload_name.name,
+        source=source.stem,
+    )
