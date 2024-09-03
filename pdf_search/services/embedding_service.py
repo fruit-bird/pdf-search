@@ -85,14 +85,19 @@ class EmbeddingService:
         # - [x] test deleting a single file's embeddings after uploading at least 2 files
 
     @staticmethod
-    async def get_all_metadata(
+    async def get_metadata(
         collection_name="pdf_embeddings",
-        where=None,
+        pdf_uuid: uuid.UUID = None,
     ) -> list[dict]:
         vectordb = Chroma(
             persist_directory=config.ai.embeddings_persist_path,
             collection_name=collection_name,
         )
+
+        if pdf_uuid:
+            where = {"source": str(pdf_uuid)}
+        else:
+            where = None
 
         metadatas = vectordb.get(include=["metadatas"], where=where)["metadatas"]
         return map(dict, set(tuple(meta.items()) for meta in metadatas))
