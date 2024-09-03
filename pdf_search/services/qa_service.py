@@ -5,6 +5,7 @@ from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_community.llms.ollama import Ollama
+from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
 from pdf_search.config import config
 from pdf_search.schemas import AskQuestionResponse
@@ -26,17 +27,18 @@ class QAService:
 
         This queries all the documents in the collection
         """
-        embedding = OllamaEmbeddings(model=config.ai.model_name)
+        embedding = GoogleGenerativeAIEmbeddings(model=config.ai.embedding_model_name)
         vectordb = Chroma(
-            persist_directory=config.ai.embeddings_persist_path,
-            embedding_function=embedding,
+            persist_directory=config.api.embeddings_persist_path,
             collection_name=collection_name,
+            embedding_function=embedding,
         )
 
         retriever = vectordb.as_retriever(search_kwargs={"filter": metadata_filter})
 
         prompt = hub.pull("rlm/rag-prompt")
-        llm = Ollama(model=config.ai.model_name)
+        llm = GoogleGenerativeAI(model=config.ai.model_name)
+        # llm = Ollama(model=config.ai.model_name)
 
         qa_chain = (
             {
@@ -52,7 +54,7 @@ class QAService:
         docs = await retriever.ainvoke(question)
         sources = [doc.metadata.get("source", "Unknown") for doc in docs]
         names = [doc.metadata.get("name", "Unknown") for doc in docs]
-        
+
         return {
             "question": question,
             "answer": answer,

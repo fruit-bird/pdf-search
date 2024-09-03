@@ -1,12 +1,12 @@
 import asyncio
 import uuid
-
-# from langchain_chroma import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PDFMinerLoader
 from pydantic.types import Path
 from langchain_community.vectorstores import Chroma
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from typing import Optional
 
 from pdf_search.config import config
 
@@ -16,7 +16,7 @@ class EmbeddingService:
     async def generate_embeddings_from_pdf(
         pdf_source_path: Path,
         pdf_name: Path,
-        chunk_size=1000,
+        chunk_size=4000,
         chunk_overlap=200,
         collection_name="pdf_embeddings",
     ) -> list[str]:
@@ -33,9 +33,10 @@ class EmbeddingService:
         )
         texts = await asyncio.to_thread(text_splitter.split_documents, documents)
 
-        embedding = OllamaEmbeddings(model=config.ai.embedding_model_name)
+        # embedding = OllamaEmbeddings(model=config.ai.embedding_model_name)
+        embedding = GoogleGenerativeAIEmbeddings(model=config.ai.embedding_model_name)
         vectordb = Chroma(
-            persist_directory=config.ai.embeddings_persist_path,
+            persist_directory=config.api.embeddings_persist_path,
             collection_name=collection_name,
             embedding_function=embedding,
         )
@@ -44,22 +45,12 @@ class EmbeddingService:
         return added_text_ids
 
     @staticmethod
-    async def update_embeddings_from_pdf(
-        pdf_source_path: Path,
-        pdf_name: Path,
-        collection_name="pdf_embeddings",
-    ):
-        # just delete the old pdf and its embeddings
-        # and generate new embeddings from this new pdf, but give it the same uuid as the old one
-        pass
-
-    @staticmethod
     async def delete_embeddings_of_pdf(
         pdf_uuid: uuid.UUID,
         collection_name="pdf_embeddings",
     ) -> bool:
         vectordb = Chroma(
-            persist_directory=config.ai.embeddings_persist_path,
+            persist_directory=config.api.embeddings_persist_path,
             collection_name=collection_name,
         )
 
@@ -82,22 +73,20 @@ class EmbeddingService:
         remaining_docs = vectordb.get(where={"source": str(pdf_uuid)})["ids"]
         return len(remaining_docs) == 0
 
-        # - [x] test deleting a single file's embeddings after uploading at least 2 files
-
     @staticmethod
     async def get_metadata(
         collection_name="pdf_embeddings",
-        pdf_uuid: uuid.UUID = None,
+        pdf_uuid: Optional[uuid.UUID] = None,
     ) -> list[dict]:
         vectordb = Chroma(
-            persist_directory=config.ai.embeddings_persist_path,
+            persist_directory=config.api.embeddings_persist_path,
             collection_name=collection_name,
         )
 
         if pdf_uuid:
             where = {"source": str(pdf_uuid)}
+            metadatas = vectordb.get(include=["metadatas"], where=where)["metadatas"]
         else:
-            where = None
+            metadatas = vectordb.get(include=["metadatas"])["metadatas"]
 
-        metadatas = vectordb.get(include=["metadatas"], where=where)["metadatas"]
         return map(dict, set(tuple(meta.items()) for meta in metadatas))
