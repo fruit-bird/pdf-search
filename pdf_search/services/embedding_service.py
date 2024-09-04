@@ -20,6 +20,12 @@ class EmbeddingService:
         chunk_overlap=200,
         collection_name="pdf_embeddings",
     ) -> list[str]:
+        """
+        Generates embeddings from a PDF file and adds them to the collection.
+        Returns the ids of the added embeddings.
+
+        The PDF is first loaded, then split into chunks, and finally embedded.
+        """
         loader = PDFMinerLoader(file_path=pdf_source_path)
         documents = await loader.aload()
 
@@ -51,6 +57,11 @@ class EmbeddingService:
         pdf_uuid: uuid.UUID,
         collection_name="pdf_embeddings",
     ) -> bool:
+        """
+        Deletes all embeddings of a document with the given uuid from the collection.
+
+        Returns True if all embeddings were deleted, False otherwise.
+        """
         vectordb = Chroma(
             client=chromadb.HttpClient(
                 host=config.chroma.host,
@@ -83,6 +94,12 @@ class EmbeddingService:
         collection_name="pdf_embeddings",
         pdf_uuid: Optional[uuid.UUID] = None,
     ) -> list[dict]:
+        """
+        Fetches metadata of documents in the collection.
+
+        - If pdf_uuid is provided, fetches metadata of the document with that uuid.
+        - Otherwise, fetches metadata of all documents in the collection.
+        """
         vectordb = Chroma(
             client=chromadb.HttpClient(
                 host=config.chroma.host,
