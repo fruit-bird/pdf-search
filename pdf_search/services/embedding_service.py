@@ -1,12 +1,12 @@
 import asyncio
 import uuid
-from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PDFMinerLoader
 from pydantic.types import Path
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from typing import Optional
+import chromadb
 
 from pdf_search.config import config
 
@@ -33,10 +33,12 @@ class EmbeddingService:
         )
         texts = await asyncio.to_thread(text_splitter.split_documents, documents)
 
-        # embedding = OllamaEmbeddings(model=config.ai.embedding_model_name)
         embedding = GoogleGenerativeAIEmbeddings(model=config.ai.embedding_model_name)
         vectordb = Chroma(
-            persist_directory=config.api.embeddings_persist_path,
+            client=chromadb.HttpClient(
+                host=config.chroma.host,
+                port=config.chroma.port,
+            ),
             collection_name=collection_name,
             embedding_function=embedding,
         )
@@ -50,7 +52,10 @@ class EmbeddingService:
         collection_name="pdf_embeddings",
     ) -> bool:
         vectordb = Chroma(
-            persist_directory=config.api.embeddings_persist_path,
+            client=chromadb.HttpClient(
+                host=config.chroma.host,
+                port=config.chroma.port,
+            ),
             collection_name=collection_name,
         )
 
@@ -79,7 +84,10 @@ class EmbeddingService:
         pdf_uuid: Optional[uuid.UUID] = None,
     ) -> list[dict]:
         vectordb = Chroma(
-            persist_directory=config.api.embeddings_persist_path,
+            client=chromadb.HttpClient(
+                host=config.chroma.host,
+                port=config.chroma.port,
+            ),
             collection_name=collection_name,
         )
 

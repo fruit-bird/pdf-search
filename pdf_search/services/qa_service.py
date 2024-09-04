@@ -1,11 +1,10 @@
 from langchain_chroma.vectorstores import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
 from langchain import hub
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-from langchain_community.llms.ollama import Ollama
 from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+import chromadb
 
 from pdf_search.config import config
 from pdf_search.schemas import AskQuestionResponse
@@ -25,11 +24,15 @@ class QAService:
         """
         Ask a question and return the answer with the relevant sources.
 
-        This queries all the documents in the collection
+        - If `metadata_filter` is provided, it will be used to query only the documents that match the filter.
+        - Otherwise, all documents will be queried.
         """
         embedding = GoogleGenerativeAIEmbeddings(model=config.ai.embedding_model_name)
         vectordb = Chroma(
-            persist_directory=config.api.embeddings_persist_path,
+            client=chromadb.HttpClient(
+                host=config.chroma.host,
+                port=config.chroma.port,
+            ),
             collection_name=collection_name,
             embedding_function=embedding,
         )
@@ -38,7 +41,6 @@ class QAService:
 
         prompt = hub.pull("rlm/rag-prompt")
         llm = GoogleGenerativeAI(model=config.ai.model_name)
-        # llm = Ollama(model=config.ai.model_name)
 
         qa_chain = (
             {
