@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  pdf_search:
+    container_name: pdf_search
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - pdf_search:/app/pdf_search
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "8080:8080"
+    networks:
+      - net
+    depends_on:
+      - chromadb
+
+  chromadb:
+    container_name: chromadb
+    image: chromadb/chroma:latest
+    volumes:
+      - chromadb:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    ports:
+      - 8000:8000
+    networks:
+      - net
+
+volumes:
+  chromadb:
+  pdf_search:
+
+networks:
+  net:
+    driver: bridge

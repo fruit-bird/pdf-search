@@ -51,7 +51,8 @@ COPY --from=builder $PYSETUP_PATH $PYSETUP_PATH
 
 # Copy application code
 WORKDIR /app
-COPY pdf_search config.dev.yaml .
+COPY pdf_search/ /app/pdf_search/
+COPY config.dev.yaml /app/config.dev.yaml
 
 # Set up entrypoint
 CMD ["python", "pdf_search/main.py"]
